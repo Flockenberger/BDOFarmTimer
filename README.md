@@ -12,6 +12,9 @@ exact second when it occured. If you do not want to use a specific server, or th
 
 Press apply. Now the timer starts counting down to the next tick.
 
+Once there are only 25 seconds left before the next tick a red text "SWITCH" will appear in the bottom left corner notifying you that you should switch now because
+BDO Server switching can take up to 20 seconds (in my tests).
+
 ### Load/Save
 You can also load and save your offsets so that you do not have to type them in every time.
 
