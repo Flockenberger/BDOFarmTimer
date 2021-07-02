@@ -294,7 +294,7 @@ public class Controller {
 		id_s_bal1_off_s.setValueFactory(new TimeOffsetValueFactory(0, 59));
 
 		addListener(id_s_med1_off);
-		addListener(id_s_med1_off);
+		addListener(id_s_med1_off_s);
 		addListener(id_s_val1_off);
 		addListener(id_s_val1_off_s);
 		addListener(id_s_cal1_off);
