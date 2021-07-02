@@ -18,6 +18,10 @@ BDO Server switching can take up to 20 seconds (in my tests).
 ### Load/Save
 You can also load and save your offsets so that you do not have to type them in every time.
 
+## Requirements
+
+This program uses Java 8 and JavaFX.
+
 ------------------------------------------------------
 ![alt text](https://github.com/Flockenberger/BDOFarmTimer/blob/master/src/main/resources/exp.png?raw=true)
 
