@@ -132,6 +132,13 @@ public class Controller {
 
 	private Stage mainStage;
 
+	private Date diff;
+
+	private LocalTime time;
+
+	private Date now = null;
+	private Date tickTime = null;
+
 	@FXML
 	void onAbout(ActionEvent event) {
 		Alert alert = new Alert(AlertType.INFORMATION);
@@ -307,7 +314,8 @@ public class Controller {
 		Timeline clock = new Timeline(new KeyFrame(Duration.ZERO, e -> {
 
 			// get current time
-			LocalTime time = LocalTime.now();
+
+			time = LocalTime.now();
 			idl_timer.setText(time.getHour() + ":" + time.getMinute() + ":" + time.getSecond());
 
 			if (currentTick != null) { // if we have a tick
@@ -322,9 +330,6 @@ public class Controller {
 					offset = Integer.valueOf(digits[1]);
 
 				int currentTime = offset; // 0, 1, 2, 3....
-
-				Date now = null;
-				Date tickTime = null;
 
 				// this is very hacky and there are waayyy better solutions to do this but for
 				// now it works and thats all I care about...
@@ -346,31 +351,24 @@ public class Controller {
 				// now compare the current tick to the current time. If the current time is
 				// greater than the "last"/"current" tick then we need to switch to the next
 				// one.
-				while (now.compareTo(tickTime) > 0) {
+				if (now.compareTo(tickTime) > 0) {
 					// here we check if we still have a tick in the list that comes after
 					// currentTime but is still within the 10 minutes
 					if (ticks.tickExists(currentTime)) {
 						currentTick = ticks.getNext(); // then we get the next tick and parse it as date again
-						try {
-							tickTime = format
-									.parse(currentTick.getMinuteOffset() + ":" + currentTick.getSecondsOffset());
-						} catch (ParseException e2) {
-							e2.printStackTrace();
-						}
 					} else {
 						// otherwise we do not have a new tick within this 10 minute timeframe. This
 						// means we need to start with the first tick again
 						currentTick = ticks.resetAndGetFirst();
-
-						// and we parse it again
-						try {
-							tickTime = format
-									.parse(currentTick.getMinuteOffset() + ":" + currentTick.getSecondsOffset());
-						} catch (ParseException e2) {
-							e2.printStackTrace();
-						}
-						break;
 					}
+					// and we parse it again
+					try {
+						tickTime = format
+								.parse(currentTick.getMinuteOffset() + ":" + currentTick.getSecondsOffset());
+					} catch (ParseException e2) {
+						e2.printStackTrace();
+					}
+					
 				}
 
 				// here we calculate the difference in time to display the remaining time left
@@ -390,23 +388,23 @@ public class Controller {
 
 				}
 
-				Date diff = new Date(difference);
-				
-				//here we display the "SWITCH" text
+				diff = new Date(difference);
+
+				// here we display the "SWITCH" text
 				if (diff.getSeconds() <= 25 && diff.getMinutes() == 0) {
 					id_l_switch.setText("SWITCH");
 					id_l_switch.setTextFill(javafx.scene.paint.Color.RED);
 				} else
 					id_l_switch.setText("");
 
-				
 				id_l_nextTick.setText(diff.getMinutes() + ":" + diff.getSeconds());
 				id_l_nextServer.setText(currentTick.getServer().getName());
 
 			}
-
-		}), new KeyFrame(Duration.seconds(1)));
+			
+		}), new KeyFrame(Duration.seconds(0.1f)));
 		clock.setCycleCount(Animation.INDEFINITE);
+
 		clock.play();
 
 	}
