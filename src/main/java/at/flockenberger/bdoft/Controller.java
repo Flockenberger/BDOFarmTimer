@@ -1,14 +1,17 @@
 package at.flockenberger.bdoft;
 
 import java.io.File;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.LocalTime;
 import java.util.Date;
 
-import javafx.animation.Animation;
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
+import at.flockenberger.bdoft.timer.FarmTimer;
+import at.flockenberger.bdoft.timer.FarmTimer.FarmUIUpdate;
+import at.flockenberger.bdoft.timer.Server;
+import at.flockenberger.bdoft.timer.Tick;
+import at.flockenberger.bdoft.timer.TickTimes;
+import at.flockenberger.bdoft.util.DataStore;
+import at.flockenberger.bdoft.util.TimeOffsetValueFactory;
+import at.flockenberger.bdoft.util.TimerSettings;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -20,7 +23,6 @@ import javafx.scene.control.Spinner;
 import javafx.scene.layout.AnchorPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import javafx.util.Duration;
 import javafx.util.StringConverter;
 
 public class Controller {
@@ -124,20 +126,9 @@ public class Controller {
 	@FXML
 	private Label id_l_nt;
 
-	private SimpleDateFormat format = new SimpleDateFormat("mm:ss");
-
-	private TickTimes ticks = new TickTimes();
-
-	private Tick currentTick;
-
 	private Stage mainStage;
 
-	private Date diff;
-
-	private LocalTime time;
-
-	private Date now = null;
-	private Date tickTime = null;
+	private FarmTimer farmTimer;
 
 	@FXML
 	void onAbout(ActionEvent event) {
@@ -165,9 +156,14 @@ public class Controller {
 
 		// Show save file dialog
 		File file = fileChooser.showOpenDialog(mainStage);
+		loadFile(file);
+	}
 
+	void loadFile(File file) {
+
+		TickTimes ticks;
 		if (file != null) {
-			ticks = (TickTimes) DataStore.loadObject(file.toPath());
+			 ticks = (TickTimes) DataStore.loadObject(file.toPath());
 
 			id_cb_med1.setSelected(false);
 			id_cb_val1.setSelected(false);
@@ -224,14 +220,16 @@ public class Controller {
 		File file = fileChooser.showSaveDialog(mainStage);
 
 		if (file != null) {
-			DataStore.storeObject(file.toPath(), ticks);
+			DataStore.storeObject(file.toPath(), farmTimer.getTicks());
 		}
 
 	}
 
 	@FXML
 	void onApply(ActionEvent event) {
-
+		
+		TickTimes ticks = farmTimer.getTicks();
+		
 		ticks.clear();
 
 		if (id_cb_med1.isSelected()) {
@@ -261,7 +259,8 @@ public class Controller {
 		}
 
 		ticks.update();
-		currentTick = ticks.getNext();
+		farmTimer.initCurrent();
+		farmTimer.start();
 	}
 
 	private void commitEditorText(Spinner<Integer> spinner) {
@@ -311,102 +310,28 @@ public class Controller {
 		addListener(id_s_bal1_off);
 		addListener(id_s_bal1_off_s);
 
-		Timeline clock = new Timeline(new KeyFrame(Duration.ZERO, e -> {
+		farmTimer = new FarmTimer();
+		farmTimer.setUiUpdateCallback(new FarmUIUpdate() {
 
-			// get current time
-
-			time = LocalTime.now();
-			idl_timer.setText(time.getHour() + ":" + time.getMinute() + ":" + time.getSecond());
-
-			if (currentTick != null) { // if we have a tick
-
-				// parse the the minute digits
-				String number = String.valueOf(time.getMinute());
-				String[] digits = number.split("(?<=.)");
-
-				int offset = Integer.valueOf(digits[0]);
-
-				if (digits.length >= 2)
-					offset = Integer.valueOf(digits[1]);
-
-				int currentTime = offset; // 0, 1, 2, 3....
-
-				// this is very hacky and there are waayyy better solutions to do this but for
-				// now it works and thats all I care about...
-
-				// parse the current time as date
-				try {
-					now = format.parse(currentTime + ":" + time.getSecond());
-				} catch (ParseException e2) {
-					e2.printStackTrace();
-				}
-
-				// parse the tick time as date
-				try {
-					tickTime = format.parse(currentTick.getMinuteOffset() + ":" + currentTick.getSecondsOffset());
-				} catch (ParseException e2) {
-					e2.printStackTrace();
-				}
-
-				// now compare the current tick to the current time. If the current time is
-				// greater than the "last"/"current" tick then we need to switch to the next
-				// one.
-				if (now.compareTo(tickTime) > 0) {
-					// here we check if we still have a tick in the list that comes after
-					// currentTime but is still within the 10 minutes
-					if (ticks.tickExists(currentTime)) {
-						currentTick = ticks.getNext(); // then we get the next tick and parse it as date again
-					} else {
-						// otherwise we do not have a new tick within this 10 minute timeframe. This
-						// means we need to start with the first tick again
-						currentTick = ticks.resetAndGetFirst();
-					}
-					// and we parse it again
-					try {
-						tickTime = format
-								.parse(currentTick.getMinuteOffset() + ":" + currentTick.getSecondsOffset());
-					} catch (ParseException e2) {
-						e2.printStackTrace();
-					}
-					
-				}
-
-				// here we calculate the difference in time to display the remaining time left
-				// before the tick
-				long difference = tickTime.getTime() - now.getTime();
-
-				// if the difference is less than 0 we know that the tick "overflows" into the
-				// next 10 minute frame so we "add" 10 minutes to the tick time. That way we
-				// still get the correct remaining time
-				if (difference < 0) {
-					try {
-						Date ten = format.parse("10:0");
-						difference = (tickTime.getTime() + ten.getTime()) - now.getTime();
-					} catch (ParseException e1) {
-						e1.printStackTrace();
-					}
-
-				}
-
-				diff = new Date(difference);
-
+			@Override
+			public void onUpdate(Date diff, Tick currentTick, LocalTime time) {
 				// here we display the "SWITCH" text
-				if (diff.getSeconds() <= 25 && diff.getMinutes() == 0) {
+				if (diff.getSeconds() <= TimerSettings.TIME_REMAIN_FOR_SWITCH && diff.getMinutes() == 0) {
 					id_l_switch.setText("SWITCH");
 					id_l_switch.setTextFill(javafx.scene.paint.Color.RED);
-				} else
+					id_l_nextTick.setTextFill(javafx.scene.paint.Color.RED);
+				} else {
 					id_l_switch.setText("");
+					id_l_nextTick.setTextFill(javafx.scene.paint.Color.BLACK);
+
+				}
 
 				id_l_nextTick.setText(diff.getMinutes() + ":" + diff.getSeconds());
 				id_l_nextServer.setText(currentTick.getServer().getName());
+				idl_timer.setText(time.getHour() + ":" + time.getMinute() + ":" + time.getSecond());
 
 			}
-			
-		}), new KeyFrame(Duration.seconds(0.1f)));
-		clock.setCycleCount(Animation.INDEFINITE);
-
-		clock.play();
-
+		});
 	}
 
 }

@@ -1,4 +1,4 @@
-package at.flockenberger.bdoft;
+package at.flockenberger.bdoft.timer;
 
 /**
  * <h1>Server</h1><br>

@@ -1,4 +1,4 @@
-package at.flockenberger.bdoft;
+package at.flockenberger.bdoft.util;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;

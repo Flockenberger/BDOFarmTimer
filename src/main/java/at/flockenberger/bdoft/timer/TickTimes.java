@@ -1,4 +1,4 @@
-package at.flockenberger.bdoft;
+package at.flockenberger.bdoft.timer;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -69,10 +69,11 @@ public class TickTimes implements Serializable {
 	 * @param currentTime the current minute
 	 * @return true if there is another {@link Tick} otherwise false
 	 */
-	public boolean tickExists(int currentTime) {
+	public boolean tickExists(int currentTime, int currentSeconds) {
 
 		for (Tick off : tickOffsets) {
-			if (off.getMinuteOffset() > currentTime)
+			if ((off.getMinuteOffset() == currentTime && off.getSecondsOffset() > currentSeconds)
+					|| (off.getMinuteOffset() > currentTime))
 				return true;
 		}
 		return false;

@@ -8,6 +8,14 @@
 	<name>BDOFarmTimer</name>
 	<description>BDOFarmTimer</description>
 
+	<dependencies>
+		<dependency>
+			<groupId>org.controlsfx</groupId>
+			<artifactId>controlsfx</artifactId>
+			<version>8.40.18</version>
+		</dependency>
+	</dependencies>
+
 	<build>
 		<pluginManagement>
 			<plugins>

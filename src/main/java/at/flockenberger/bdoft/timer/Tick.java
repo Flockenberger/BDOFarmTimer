@@ -1,4 +1,4 @@
-package at.flockenberger.bdoft;
+package at.flockenberger.bdoft.timer;
 
 import java.io.Serializable;
 import java.text.ParseException;

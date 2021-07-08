@@ -1,4 +1,4 @@
-package at.flockenberger.bdoft;
+package at.flockenberger.bdoft.util;
 
 import javafx.scene.control.SpinnerValueFactory.IntegerSpinnerValueFactory;
 
